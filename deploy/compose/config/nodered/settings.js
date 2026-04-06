@@ -5,6 +5,8 @@
  * This file is mounted read-only into the container.
  * Flow files and credentials are stored in /data (bind-mounted to ./data/nodered).
  */
+const bcrypt = require("bcryptjs");
+
 module.exports = {
   // Flow file storage
   flowFile: "flows.json",
@@ -16,6 +18,23 @@ module.exports = {
 
   // User directory for flows, nodes, and credentials
   userDir: "/data",
+
+  // ── Authentication ──────────────────────────────────────────────
+  // Password hash computed at startup from SEATURTLE_INITIAL_PASSWORD.
+  // No manual bcrypt generation required — zero-touch operation.
+  adminAuth: {
+    type: "credentials",
+    users: [
+      {
+        username: "admin",
+        password: bcrypt.hashSync(
+          process.env.NODE_RED_CREDENTIAL_SECRET || "changeseaturtle",
+          8
+        ),
+        permissions: "*",
+      },
+    ],
+  },
 
   // Logging
   logging: {

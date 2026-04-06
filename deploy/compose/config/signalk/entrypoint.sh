@@ -18,6 +18,18 @@ fi
 if [ ! -d "$SIGNALK_DIR/plugin-config-data" ]; then
   echo "seaturtle-signalk: seeding plugin configuration"
   cp -a "$PREBAKED/plugin-config-data" "$SIGNALK_DIR/plugin-config-data"
+
+  # Inject MQTT credentials from environment into plugin config
+  if [ -n "$MQTT_USER" ] && [ -n "$MQTT_PASS" ]; then
+    MQTT_CONFIG="$SIGNALK_DIR/plugin-config-data/signalk-mqtt-gw.json"
+    if [ -f "$MQTT_CONFIG" ]; then
+      # Use sed to replace empty credentials with env values
+      sed -i "s|\"username\": \"\"|\"username\": \"$MQTT_USER\"|" "$MQTT_CONFIG"
+      sed -i "s|\"password\": \"\"|\"password\": \"$MQTT_PASS\"|" "$MQTT_CONFIG"
+      echo "seaturtle-signalk: MQTT credentials injected"
+    fi
+  fi
+
   echo "seaturtle-signalk: plugin configuration seeded"
 fi
 
