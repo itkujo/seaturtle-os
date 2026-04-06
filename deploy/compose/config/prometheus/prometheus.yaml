@@ -23,3 +23,10 @@ scrape_configs:
     static_configs:
       - targets: ["grafana:3000"]
     metrics_path: /metrics
+
+  # Signal K server metrics (requires signalk-prometheus-exporter plugin)
+  # Uncomment when the exporter plugin is installed in Signal K.
+  # - job_name: "signalk"
+  #   static_configs:
+  #     - targets: ["signalk:3000"]
+  #   metrics_path: /signalk/v1/api/metrics

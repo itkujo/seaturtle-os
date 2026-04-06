@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SeaTurtleOS</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #06b6d4;
+      --accent-hover: #22d3ee;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --red: #f87171;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.25rem;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .services {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .service {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color 0.15s;
+    }
+    .service:hover {
+      border-color: var(--accent);
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+      transition: background-color 0.3s;
+    }
+    .status-dot.healthy { background: var(--green); }
+    .status-dot.running { background: var(--green); }
+    .status-dot.unhealthy { background: var(--amber); }
+    .status-dot.starting { background: var(--amber); animation: pulse 1.5s infinite; }
+    .status-dot.exited, .status-dot.dead, .status-dot.offline { background: var(--red); }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .service-info h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.15rem;
+    }
+    .service-info .desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .service-meta {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .service-port {
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
+      font-size: 0.8rem;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .service-status {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+    .credentials {
+      margin-top: 2.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+    .credentials h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    .cred-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .cred-table th {
+      text-align: left;
+      color: var(--text-muted);
+      font-weight: 500;
+      padding: 0.4rem 0.75rem 0.4rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .cred-table td {
+      padding: 0.5rem 0.75rem 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .cred-table tr:last-child td {
+      border-bottom: none;
+    }
+    .cred-table code {
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
+      font-size: 0.8rem;
+      background: var(--bg);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      color: var(--green);
+    }
+    .note {
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .note strong {
+      color: var(--amber);
+    }
+    footer {
+      margin-top: 2.5rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    @media (max-width: 480px) {
+      body { padding: 1rem 0.75rem; }
+      .service { padding: 0.75rem 1rem; gap: 0.75rem; }
+      .cred-table { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>SeaTurtleOS</h1>
+      <p>Marine appliance services</p>
+    </header>
+
+    <div class="services">
+      <a class="service" href="/admin/" target="_blank" rel="noopener" data-container="seaturtle-npm">
+        <span class="status-dot" title="Loading..."></span>
+        <div class="service-info">
+          <h2>Nginx Proxy Manager</h2>
+          <div class="desc">Reverse proxy &amp; SSL management</div>
+        </div>
+        <div class="service-meta">
+          <div class="service-port">:81</div>
+          <div class="service-status"></div>
+        </div>
+      </a>
+
+      <a class="service" href="http://localhost:3000" target="_blank" rel="noopener" data-container="seaturtle-signalk">
+        <span class="status-dot" title="Loading..."></span>
+        <div class="service-info">
+          <h2>Signal K</h2>
+          <div class="desc">Marine data hub &mdash; NMEA 2000 / 0183</div>
+        </div>
+        <div class="service-meta">
+          <div class="service-port">:3000</div>
+          <div class="service-status"></div>
+        </div>
+      </a>
+
+      <a class="service" href="http://localhost:1880" target="_blank" rel="noopener" data-container="seaturtle-nodered">
+        <span class="status-dot" title="Loading..."></span>
+        <div class="service-info">
+          <h2>Node-RED</h2>
+          <div class="desc">Flow-based automation</div>
+        </div>
+        <div class="service-meta">
+          <div class="service-port">:1880</div>
+          <div class="service-status"></div>
+        </div>
+      </a>
+
+      <a class="service" href="http://localhost:3001" target="_blank" rel="noopener" data-container="seaturtle-grafana">
+        <span class="status-dot" title="Loading..."></span>
+        <div class="service-info">
+          <h2>Grafana</h2>
+          <div class="desc">Dashboards &amp; data visualization</div>
+        </div>
+        <div class="service-meta">
+          <div class="service-port">:3001</div>
+          <div class="service-status"></div>
+        </div>
+      </a>
+
+      <a class="service" href="http://localhost:9090" target="_blank" rel="noopener" data-container="seaturtle-prometheus">
+        <span class="status-dot" title="Loading..."></span>
+        <div class="service-info">
+          <h2>Prometheus</h2>
+          <div class="desc">Metrics collection &amp; storage</div>
+        </div>
+        <div class="service-meta">
+          <div class="service-port">:9090</div>
+          <div class="service-status"></div>
+        </div>
+      </a>
+
+      <a class="service" href="http://localhost:9000" target="_blank" rel="noopener" data-container="seaturtle-portainer">
+        <span class="status-dot" title="Loading..."></span>
+        <div class="service-info">
+          <h2>Portainer</h2>
+          <div class="desc">Container management</div>
+        </div>
+        <div class="service-meta">
+          <div class="service-port">:9000</div>
+          <div class="service-status"></div>
+        </div>
+      </a>
+
+      <a class="service" data-container="seaturtle-mosquitto" style="pointer-events: none; cursor: default;">
+        <span class="status-dot" title="Loading..."></span>
+        <div class="service-info">
+          <h2>Mosquitto</h2>
+          <div class="desc">MQTT broker &mdash; port 1883</div>
+        </div>
+        <div class="service-meta">
+          <div class="service-port">:1883</div>
+          <div class="service-status"></div>
+        </div>
+      </a>
+    </div>
+
+    <div class="credentials">
+      <h2>Default Credentials</h2>
+      <table class="cred-table">
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Username</th>
+            <th>Password</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Nginx Proxy Manager</td>
+            <td><code>admin@example.com</code></td>
+            <td><code>changeme</code></td>
+          </tr>
+          <tr>
+            <td>Grafana</td>
+            <td><code>admin</code></td>
+            <td><code>changeseaturtle</code></td>
+          </tr>
+          <tr>
+            <td>Node-RED</td>
+            <td><code>admin</code></td>
+            <td><code>changeseaturtle</code></td>
+          </tr>
+          <tr>
+            <td>MQTT (Mosquitto)</td>
+            <td><code>seaturtle</code></td>
+            <td><code>changeseaturtle</code></td>
+          </tr>
+          <tr>
+            <td>Portainer</td>
+            <td colspan="2">Set on first login</td>
+          </tr>
+          <tr>
+            <td>Signal K</td>
+            <td colspan="2">Set on first login (security disabled in dev)</td>
+          </tr>
+          <tr>
+            <td>Prometheus</td>
+            <td colspan="2">No authentication</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note"><strong>Change all default passwords</strong> after first login.</p>
+    </div>
+
+    <footer>
+      SeaTurtleOS &mdash; Local network only. No internet required.
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      const STATUS_URL = 'http://' + window.location.hostname + ':8081/api/status';
+      const POLL_INTERVAL = 5000;
+
+      function updateStatuses(containers) {
+        const cards = document.querySelectorAll('.service[data-container]');
+        cards.forEach(function(card) {
+          const name = card.getAttribute('data-container');
+          const dot = card.querySelector('.status-dot');
+          const statusText = card.querySelector('.service-status');
+          const container = containers.find(function(c) { return c.name === name; });
+
+          if (container) {
+            // Determine effective status class
+            var statusClass = container.state;
+            if (container.health === 'healthy') statusClass = 'healthy';
+            else if (container.health === 'unhealthy') statusClass = 'unhealthy';
+            else if (container.health === 'starting') statusClass = 'starting';
+
+            dot.className = 'status-dot ' + statusClass;
+            dot.title = container.status;
+            if (statusText) statusText.textContent = container.status;
+          } else {
+            dot.className = 'status-dot offline';
+            dot.title = 'Not running';
+            if (statusText) statusText.textContent = 'offline';
+          }
+        });
+      }
+
+      function fetchStatus() {
+        fetch(STATUS_URL)
+          .then(function(res) { return res.json(); })
+          .then(updateStatuses)
+          .catch(function() {
+            // Status API unreachable — mark all as unknown
+            var dots = document.querySelectorAll('.status-dot');
+            dots.forEach(function(d) {
+              d.className = 'status-dot';
+              d.title = 'Status unavailable';
+            });
+            var texts = document.querySelectorAll('.service-status');
+            texts.forEach(function(t) { t.textContent = ''; });
+          });
+      }
+
+      // Initial fetch, then poll
+      fetchStatus();
+      setInterval(fetchStatus, POLL_INTERVAL);
+    })();
+  </script>
+</body>
+</html>

@@ -8,6 +8,52 @@ networks:
     name: seaturtle
 
 services:
+  # ── Status API ──────────────────────────────────────────────────
+  # Reports Docker container status as JSON.
+  # API: http://localhost:8081/api/status
+  status-api:
+    build:
+      context: ./config/status-api
+      dockerfile: Dockerfile
+    image: seaturtle/status-api:latest
+    container_name: seaturtle-status-api
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - COMPOSE_PROJECT=compose
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - seaturtle
+    healthcheck:
+      test: ["CMD", "/status-api", "-healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # ── Landing Page ────────────────────────────────────────────────
+  # Shows all service links and default credentials.
+  # GUI: http://localhost:8080
+  landing:
+    image: nginx:1-alpine
+    container_name: seaturtle-landing
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config/landing/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./config/landing/index.html:/usr/share/nginx/html/index.html:ro
+    networks:
+      - seaturtle
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
   # ── Reverse Proxy ──────────────────────────────────────────────
   # GUI: http://localhost:81
   # Default login: admin@example.com / changeme (forced change on first login)
@@ -32,8 +78,34 @@ services:
       retries: 3
       start_period: 30s
 
+  # ── MQTT Auth Init ────────────────────────────────────────────
+  # Generates Mosquitto password file on first boot, then exits.
+  mosquitto-init:
+    image: eclipse-mosquitto:2
+    container_name: seaturtle-mosquitto-init
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        PASSWD_FILE=/mosquitto/data/passwd
+        if [ -f "$$PASSWD_FILE" ]; then
+          echo "mosquitto-init: password file exists, skipping"
+        else
+          echo "mosquitto-init: generating password file"
+          mosquitto_passwd -b -c "$$PASSWD_FILE" "$$MQTT_USER" "$$MQTT_PASS"
+          chown mosquitto:mosquitto "$$PASSWD_FILE"
+          echo "mosquitto-init: done"
+        fi
+    environment:
+      - MQTT_USER=${SEATURTLE_MQTT_USER:-seaturtle}
+      - MQTT_PASS=${SEATURTLE_MQTT_PASSWORD:-changeseaturtle}
+    volumes:
+      - ./data/mosquitto/data:/mosquitto/data
+    networks:
+      - seaturtle
+
   # ── MQTT Broker ────────────────────────────────────────────────
   # MQTT: localhost:1883   WebSocket: localhost:9001
+  # Credentials: $SEATURTLE_MQTT_USER / $SEATURTLE_MQTT_PASSWORD
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: seaturtle-mosquitto
@@ -47,15 +119,22 @@ services:
       - ./data/mosquitto/log:/mosquitto/log
     networks:
       - seaturtle
+    depends_on:
+      mosquitto-init:
+        condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/broker/uptime' -C 1 -W 3"]
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/broker/uptime' -C 1 -W 3 -u $${MQTT_USER} -P $${MQTT_PASS}"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+    environment:
+      - MQTT_USER=${SEATURTLE_MQTT_USER:-seaturtle}
+      - MQTT_PASS=${SEATURTLE_MQTT_PASSWORD:-changeseaturtle}
 
   # ── Flow Engine ────────────────────────────────────────────────
   # GUI: http://localhost:1880
+  # Login: admin / $SEATURTLE_INITIAL_PASSWORD
   nodered:
     image: nodered/node-red:4.1.8
     container_name: seaturtle-nodered
@@ -64,6 +143,8 @@ services:
       - "1880:1880"
     environment:
       - NODE_RED_CREDENTIAL_SECRET=${SEATURTLE_INITIAL_PASSWORD:-changeseaturtle}
+      - MQTT_USER=${SEATURTLE_MQTT_USER:-seaturtle}
+      - MQTT_PASS=${SEATURTLE_MQTT_PASSWORD:-changeseaturtle}
       - TZ=${TZ:-UTC}
     volumes:
       - ./config/nodered/settings.js:/data/settings.js:ro
@@ -94,12 +175,11 @@ services:
       - ./data/portainer:/data
     networks:
       - seaturtle
+    # Note: Portainer CE 2.27+ ships a minimal container with no shell or
+    # CLI tools (no wget, curl, or sh). Health check is not possible from
+    # inside the container. Rely on Docker's restart policy instead.
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9000/api/system/status"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
+      disable: true
 
   # ── Metrics Collection ─────────────────────────────────────────
   # GUI: http://localhost:9090
@@ -145,11 +225,16 @@ services:
     command: ["--sample-nmea0183-data"]
     environment:
       - IS_IN_DOCKER=true
+      - MQTT_USER=${SEATURTLE_MQTT_USER:-seaturtle}
+      - MQTT_PASS=${SEATURTLE_MQTT_PASSWORD:-changeseaturtle}
       - TZ=${TZ:-UTC}
     volumes:
       - ./data/signalk:/home/node/.signalk
     networks:
       - seaturtle
+    depends_on:
+      mosquitto:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/signalk"]
       interval: 30s
