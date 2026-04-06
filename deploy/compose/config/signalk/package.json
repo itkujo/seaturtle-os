@@ -1,0 +1,7 @@
+{
+  "name": "seaturtle-signalk-plugins",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pre-installed Signal K plugins for SeaTurtleOS",
+  "dependencies": {}
+}

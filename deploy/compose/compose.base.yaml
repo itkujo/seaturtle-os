@@ -134,14 +134,15 @@ services:
   # Runs with simulated NMEA0183 data for development.
   # ADR: docs/adr/0003-signal-k-integration.md
   signalk:
-    image: signalk/signalk-server:latest
+    build:
+      context: ./config/signalk
+      dockerfile: Dockerfile
+    image: seaturtle/signalk:latest
     container_name: seaturtle-signalk
     restart: unless-stopped
     ports:
       - "3000:3000"
-    entrypoint:
-      - /home/node/signalk/node_modules/.bin/signalk-server
-      - --sample-nmea0183-data
+    command: ["--sample-nmea0183-data"]
     environment:
       - IS_IN_DOCKER=true
       - TZ=${TZ:-UTC}

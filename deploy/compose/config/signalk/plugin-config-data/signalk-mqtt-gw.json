@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "configuration": {
+    "runLocalServer": false,
+    "port": 1883,
+    "sendToRemote": true,
+    "remoteHost": "mqtt://mosquitto",
+    "username": "",
+    "password": "",
+    "rejectUnauthorized": false,
+    "selectedOption": "2) all deltas",
+    "paths": [
+      { "path": "navigation.position", "interval": 60 },
+      { "path": "navigation.speedOverGround", "interval": 10 },
+      { "path": "navigation.courseOverGroundTrue", "interval": 10 },
+      { "path": "environment.wind.speedApparent", "interval": 10 },
+      { "path": "environment.wind.angleApparent", "interval": 10 },
+      { "path": "environment.depth.belowTransducer", "interval": 30 }
+    ]
+  }
+}
