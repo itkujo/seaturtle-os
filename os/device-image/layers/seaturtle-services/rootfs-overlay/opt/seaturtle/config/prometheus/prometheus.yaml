@@ -1,0 +1,32 @@
+# SeaTurtleOS — Prometheus Configuration
+# Docs: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Node-RED metrics (requires node-red-contrib-prometheus-exporter)
+  # Uncomment when the exporter node is installed in Node-RED.
+  # - job_name: "nodered"
+  #   static_configs:
+  #     - targets: ["nodered:1880"]
+  #   metrics_path: /metrics
+
+  # Grafana built-in metrics
+  - job_name: "grafana"
+    static_configs:
+      - targets: ["grafana:3000"]
+    metrics_path: /metrics
+
+  # Signal K server metrics (requires signalk-prometheus-exporter plugin)
+  # Uncomment when the exporter plugin is installed in Signal K.
+  # - job_name: "signalk"
+  #   static_configs:
+  #     - targets: ["signalk:3000"]
+  #   metrics_path: /signalk/v1/api/metrics

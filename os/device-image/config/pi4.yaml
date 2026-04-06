@@ -1,0 +1,14 @@
+# SeaTurtleOS — Raspberry Pi 4 (SD card)
+#
+# Build: ./scripts/build-image.sh pi4
+
+include:
+  file: base.yaml
+
+device:
+  layer: rpi4
+  storage_type: sd
+  hostname: seaturtle-pi4
+
+image:
+  name: pi4-seaturtle-os

@@ -1,0 +1,19 @@
+[Unit]
+Description=SeaTurtleOS — Docker Compose service stack
+Requires=docker.service
+After=docker.service seaturtle-preload-images.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/seaturtle
+ExecStart=/usr/bin/docker compose -f compose.yaml up -d --remove-orphans
+ExecStop=/usr/bin/docker compose -f compose.yaml down
+ExecReload=/usr/bin/docker compose -f compose.yaml up -d --remove-orphans
+
+# Restart the stack if it fails to start
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

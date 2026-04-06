@@ -1,0 +1,14 @@
+# SeaTurtleOS — Raspberry Pi 5 (SD card)
+#
+# Build: ./scripts/build-image.sh pi5
+
+include:
+  file: base.yaml
+
+device:
+  layer: rpi5
+  storage_type: sd
+  hostname: seaturtle-pi5
+
+image:
+  name: pi5-seaturtle-os

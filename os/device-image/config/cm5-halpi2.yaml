@@ -1,0 +1,20 @@
+# SeaTurtleOS — CM5 / HalPi2 (NVMe SSD)
+#
+# HatLabs HalPi2: CM5-based marine computer with built-in power supply,
+# NMEA 2000, NMEA 0183, CAN bus, IP65 enclosure.
+# See: docs/hardware/halpi2-profile.md
+#
+# Build: ./scripts/build-image.sh cm5-halpi2
+
+include:
+  file: base.yaml
+
+device:
+  layer: rpi5
+  storage_type: nvme
+  hostname: seaturtle-halpi2
+
+image:
+  name: cm5-halpi2-seaturtle-os
+  # NVMe SSD — plenty of space, no need to be conservative
+  root_part_size: 800%

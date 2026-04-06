@@ -1,0 +1,17 @@
+[Unit]
+Description=SeaTurtleOS — Load pre-pulled Docker images (first boot)
+After=docker.service
+Requires=docker.service
+ConditionPathExists=/var/lib/seaturtle-first-boot-pending
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/seaturtle-preload-images.sh
+ExecStartPost=/bin/rm -f /var/lib/seaturtle-first-boot-pending
+
+# Give plenty of time — loading ~2GB of images on SD card can be slow
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

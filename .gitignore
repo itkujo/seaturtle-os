@@ -12,3 +12,9 @@ coverage/
 
 # Runtime data directories (bind-mounted Docker volumes)
 deploy/compose/data/
+
+# Pi image build artifacts
+os/device-image/images/*
+!os/device-image/images/.gitkeep
+os/device-image/output/*
+!os/device-image/output/.gitkeep

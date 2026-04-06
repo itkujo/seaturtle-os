@@ -1,0 +1,44 @@
+# SeaTurtleOS — Base configuration for rpi-image-gen
+#
+# This is the shared config included by all device profiles.
+# Device-specific settings (pi4, pi5, cm5) are in separate files.
+#
+# Docs: https://raspberrypi.github.io/rpi-image-gen/
+
+# ── User credentials ─────────────────────────────────────────────
+# Default user for the OS. Password should be changed on first login.
+device:
+  hostname: seaturtle
+  user1: seaturtle
+  user1pass: changeseaturtle
+
+# ── Image settings ───────────────────────────────────────────────
+image:
+  layer: image-rpios
+  compression: zstd
+  boot_part_size: 200%
+  root_part_size: 500%
+  name: seaturtle-os
+
+# ── Layers ───────────────────────────────────────────────────────
+# Layers compose the image features. Order matters for dependencies.
+layer:
+  # Base OS (Debian Bookworm, minimal)
+  base: bookworm-minbase
+
+  # Docker Engine + Compose plugin
+  docker: docker-debian-bookworm
+
+  # SeaTurtle services (compose stack, pre-pulled images, systemd units)
+  seaturtle: seaturtle-services
+
+# ── Docker settings ──────────────────────────────────────────────
+docker:
+  trust_user1: y
+
+# ── SSH ──────────────────────────────────────────────────────────
+# Enable SSH but require key-based auth. Users add their key on first setup
+# or via the image config.
+ssh:
+  enable: y
+  pubkey_only: n

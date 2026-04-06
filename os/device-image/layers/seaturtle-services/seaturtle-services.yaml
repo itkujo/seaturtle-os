@@ -1,0 +1,30 @@
+# SeaTurtleOS services layer for rpi-image-gen
+#
+# Installs the Docker Compose stack, pre-pulled images, systemd units,
+# and first-boot setup for a fully offline marine appliance.
+#
+# Requires: docker-debian-bookworm layer (Docker Engine + Compose plugin)
+# METABEGIN
+# X-Env-Layer-Name: seaturtle-services
+# X-Env-Layer-Category: app
+# X-Env-Layer-Desc: SeaTurtleOS Docker Compose services, pre-pulled images, first-boot setup
+# X-Env-Layer-Requires: docker-debian-bookworm
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - jq
+    - curl
+
+  customize-hooks:
+    # Enable the Docker image pre-loader (first boot only)
+    - chroot $1 systemctl enable seaturtle-preload-images.service
+
+    # Enable the main service stack (starts after Docker + image loading)
+    - chroot $1 systemctl enable seaturtle-services.service
+
+    # Create the first-boot marker file
+    - touch $1/var/lib/seaturtle-first-boot-pending
+
+    # Set correct ownership on the seaturtle home directory
+    - chroot $1 chown -R seaturtle:seaturtle /opt/seaturtle
