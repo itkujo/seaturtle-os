@@ -21,8 +21,8 @@ required at runtime**. The typical deployment scenario:
 
 ### Image builder
 
-We plan to use [`rpi-image-gen`](https://github.com/nicholasgasior/rpi-image-gen)
-or a similar tool to build reproducible, customized Raspberry Pi images that include:
+We use [`rpi-image-gen`](https://github.com/raspberrypi/rpi-image-gen)
+(official Raspberry Pi org tool) to build reproducible, customized images that include:
 
 - Base OS (Raspberry Pi OS Lite, 64-bit)
 - Docker Engine + Compose plugin
