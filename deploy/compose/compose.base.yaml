@@ -1,0 +1,157 @@
+# SeaTurtleOS — Base Service Stack
+# Start:  docker compose -f compose.base.yaml up -d
+# Stop:   docker compose -f compose.base.yaml down
+# Logs:   docker compose -f compose.base.yaml logs -f [service]
+
+networks:
+  seaturtle:
+    name: seaturtle
+
+services:
+  # ── Reverse Proxy ──────────────────────────────────────────────
+  # GUI: http://localhost:81
+  # Default login: admin@example.com / changeme (forced change on first login)
+  # ADR: docs/adr/0001-reverse-proxy-nginx-proxy-manager.md
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:2.14.0
+    container_name: seaturtle-npm
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"
+    volumes:
+      - ./data/npm/data:/data
+      - ./data/npm/letsencrypt:/etc/letsencrypt
+    networks:
+      - seaturtle
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:81/api/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── MQTT Broker ────────────────────────────────────────────────
+  # MQTT: localhost:1883   WebSocket: localhost:9001
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: seaturtle-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./data/mosquitto/data:/mosquitto/data
+      - ./data/mosquitto/log:/mosquitto/log
+    networks:
+      - seaturtle
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/broker/uptime' -C 1 -W 3"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ── Flow Engine ────────────────────────────────────────────────
+  # GUI: http://localhost:1880
+  nodered:
+    image: nodered/node-red:4.1.8
+    container_name: seaturtle-nodered
+    restart: unless-stopped
+    ports:
+      - "1880:1880"
+    environment:
+      - NODE_RED_CREDENTIAL_SECRET=${SEATURTLE_INITIAL_PASSWORD:-changeseaturtle}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./config/nodered/settings.js:/data/settings.js:ro
+      - ./data/nodered:/data
+    networks:
+      - seaturtle
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1880/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Container Management ───────────────────────────────────────
+  # GUI: http://localhost:9000
+  # First login requires interactive password creation.
+  portainer:
+    image: portainer/portainer-ce:2.27.3
+    container_name: seaturtle-portainer
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/portainer:/data
+    networks:
+      - seaturtle
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9000/api/system/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Metrics Collection ─────────────────────────────────────────
+  # GUI: http://localhost:9090
+  prometheus:
+    image: prom/prometheus:v3.4.0
+    container_name: seaturtle-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yaml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    volumes:
+      - ./config/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./data/prometheus:/prometheus
+    networks:
+      - seaturtle
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Dashboards ─────────────────────────────────────────────────
+  # GUI: http://localhost:3000
+  # Default login: admin / $SEATURTLE_INITIAL_PASSWORD
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: seaturtle-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${SEATURTLE_INITIAL_PASSWORD:-changeseaturtle}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_LOG_MODE=console
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    networks:
+      - seaturtle
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
