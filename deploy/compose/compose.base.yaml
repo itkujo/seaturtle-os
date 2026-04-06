@@ -127,19 +127,48 @@ services:
       retries: 3
       start_period: 15s
 
-  # ── Dashboards ─────────────────────────────────────────────────
+  # ── Marine Data Hub ───────────────────────────────────────────────
   # GUI: http://localhost:3000
+  # REST: http://localhost:3000/signalk/v1/api/
+  # WebSocket: ws://localhost:3000/signalk/v1/stream
+  # Runs with simulated NMEA0183 data for development.
+  # ADR: docs/adr/0003-signal-k-integration.md
+  signalk:
+    image: signalk/signalk-server:latest
+    container_name: seaturtle-signalk
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    entrypoint:
+      - /home/node/signalk/node_modules/.bin/signalk-server
+      - --sample-nmea0183-data
+    environment:
+      - IS_IN_DOCKER=true
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./data/signalk:/home/node/.signalk
+    networks:
+      - seaturtle
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/signalk"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Dashboards ─────────────────────────────────────────────────
+  # GUI: http://localhost:3001
   # Default login: admin / $SEATURTLE_INITIAL_PASSWORD
   grafana:
     image: grafana/grafana:11.6.0
     container_name: seaturtle-grafana
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${SEATURTLE_INITIAL_PASSWORD:-changeseaturtle}
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_SERVER_ROOT_URL=http://localhost:3001
       - GF_LOG_MODE=console
       - TZ=${TZ:-UTC}
     volumes:
